@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本留学生打工工时记录</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        body {
+            background: #f3f4f6;
+            padding: 16px;
+            margin:0;
+        }
+        /* 页面居中，限制最大宽度，不再全屏 */
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius:16px;
+            padding:20px;
+            margin-bottom:16px;
+            box-shadow:0 1px 3px #00000015;
+        }
+        .today-remain-label {
+            font-size:18px;
+            color:#333;
+        }
+        .today-remain-value {
+            font-size:60px;
+            font-weight:bold;
+            line-height:1;
+            margin:8px 0;
+        }
+        .tomorrow-line {
+            margin:16px 0;
+        }
+        .tomorrow-label {
+            font-size:16px;
+            color:#555;
+        }
+        .tomorrow-value {
+            font-size:36px;
+            font-weight:bold;
+            margin:4px 0;
+        }
+        .red-text {
+            color:#dc2626;
+        }
+        .green-text {
+            color:#16a34a;
+        }
+        .yellow-text {
+            color:#d97706;
+        }
+        .status-text {
+            margin:4px 0 12px;
+        }
+        .window-info {
+            font-size:14px;
+            color:#666;
+            margin-bottom:16px;
+        }
+        .stat-row {
+            display:grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap:12px;
+        }
+        .stat-item {
+            background:#f3f4f6;
+            padding:14px;
+            border-radius:12px;
+        }
+        .stat-num {
+            font-size:24px;
+            font-weight:bold;
+        }
+        .stat-desc {
+            font-size:13px;
+            color:#555;
+        }
+        .progress-bar {
+            width:100%;
+            height:10px;
+            background:#e5e7eb;
+            border-radius:999px;
+            overflow:hidden;
+            margin-top:12px;
+        }
+        .progress-fill {
+            height:100%;
+            background:#22c55e;
+            width:0%;
+            transition:0.3s;
+        }
+        .progress-fill.warn {
+            background:#f59e0b;
+        }
+        .progress-fill.over {
+            background:#ef4444;
+        }
+        .form-title {
+            font-size:20px;
+            font-weight:bold;
+            margin-bottom:16px;
+        }
+        .form-row {
+            margin-bottom:14px;
+        }
+        label {
+            display:block;
+            font-size:14px;
+            color:#444;
+            margin-bottom:6px;
+        }
+        .two-col {
+            display:grid;
+            grid-template-columns: 2fr 1fr;
+            gap:12px;
+        }
+        input {
+            width:100%;
+            padding:12px;
+            border:1px solid #d1d5db;
+            border-radius:10px;
+            font-size:16px;
+        }
+        button.add-btn {
+            width:100%;
+            background:#111;
+            color:white;
+            padding:14px;
+            border:none;
+            border-radius:10px;
+            font-size:17px;
+            font-weight:bold;
+        }
+        .history-header {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            font-size:20px;
+            font-weight:bold;
+            margin-bottom:12px;
+        }
+        .clear-all {
+            color:#dc2626;
+            cursor:pointer;
+            font-size:15px;
+        }
+        .day-group {
+            margin-bottom:16px;
+        }
+        .day-head {
+            display:flex;
+            justify-content:space-between;
+            padding:8px 0;
+            font-weight:500;
+            color:#444;
+        }
+        .record-item {
+            display:flex;
+            justify-content:space-between;
+            padding:12px 0;
+            border-bottom:1px solid #eee;
+            align-items:center;
+        }
+        .del-btn {
+            color:#888;
+            cursor:pointer;
+            font-size:20px;
+        }
+        .tip-text {
+            font-size:13px;
+            color:#666;
+            margin-top:20px;
+            line-height:1.5;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="today-remain-label">今天还能工作</div>
+        <div class="today-remain-value" id="todayRemain">0</div>
+
+        <div class="tomorrow-line">
+            <div class="tomorrow-label">明天还能工作</div>
+            <div class="tomorrow-value" id="tomorrowRemain">0</div>
+            <div class="status-text" id="tomorrowStatus"></div>
+        </div>
+        <div class="status-text" id="todayStatus"></div>
+
+        <div class="window-info" id="windowInfo"></div>
+
+        <div class="stat-row">
+            <div class="stat-item">
+                <div class="stat-num" id="past6">0h</div>
+                <div class="stat-desc">近6天已工作</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="todayTotal">0h</div>
+                <div class="stat-desc">今天已记录</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num">28</div>
+                <div class="stat-desc">7天上限</div>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="form-title">添加一条工作记录</div>
+        <div class="form-row">
+            <label>日期 <span style="color:#0066cc;cursor:pointer" id="setToday">设为今天</span></label>
+            <input type="date" id="inputDate">
+        </div>
+        <div class="two-col">
+            <div class="form-row">
+                <label>公司 / 打工地点</label>
+                <input list="shopList" type="text" id="inputShop" placeholder="例如：便利店、餐厅">
+                <datalist id="shopList"></datalist>
+            </div>
+            <div class="form-row">
+                <label>时长（小时）</label>
+                <input type="number" id="inputHour" min="0.25" step="0.25" placeholder="">
+            </div>
+        </div>
+        <button class="add-btn" id="addBtn">添加记录</button>
+    </div>
+
+    <div class="card">
+        <div class="history-header">
+            <span>历史记录</span>
+            <span class="clear-all" id="clearAll">清空全部</span>
+        </div>
+        <div id="historyList"></div>
+    </div>
+
+    <div class="tip-text">
+        算法说明：今天可用时长 =28 −（今天之前6天总和），代表「今天+前6天」这个7天窗口合计上限28h；
+        明天窗口会自动滚动，丢弃最早一天，纳入今天的工时。
+        ⚠️ 入管局审查标准是任意连续7天，本工具仅辅助预估，请预留余量，不要卡满28小时。
+    </div>
+</div>
+
+<script>
+    const LIMIT = 28;
+    // 预警阈值：剩余小于等于20%上限就变黄
+    const WARN_RATIO = 0.2;
+    const WARN_VALUE = LIMIT * WARN_RATIO;
+
+    // 工具函数
+    function getLocalDateStr(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const day = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${day}`;
+    }
+    function parseDate(s) {
+        const [y,m,day] = s.split('-').map(Number);
+        return new Date(y, m-1, day);
+    }
+    function addDays(d, n) {
+        const nd = new Date(d);
+        nd.setDate(nd.getDate() + n);
+        return nd;
+    }
+
+    // 数据
+    let records = JSON.parse(localStorage.getItem("workRecords")) || [];
+
+    // DOM
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const todayDateStr = getLocalDateStr(new Date());
+    $("#inputDate").value = todayDateStr;
+
+    // 日期范围限制
+    const today = new Date();
+    const maxFuture = addDays(today, 30);
+    const minPast = addDays(today, -365*5);
+    $("#inputDate").setAttribute("max", getLocalDateStr(maxFuture));
+    $("#inputDate").setAttribute("min", getLocalDateStr(minPast));
+
+    $("#setToday").onclick = ()=> $("#inputDate").value = getLocalDateStr(new Date());
+
+    // 保存数据
+    function saveRecords() {
+        localStorage.setItem("workRecords", JSON.stringify(records));
+    }
+
+    // 删除单条
+    function delRecord(idx) {
+        records.splice(idx,1);
+        saveRecords();
+        renderAll();
+    }
+
+    // 提取所有不重复店铺，更新下拉datalist
+    function refreshShopDatalist(){
+        const shopSet = new Set();
+        records.forEach(r=> shopSet.add(r.shop));
+        const listEl = $("#shopList");
+        listEl.innerHTML = "";
+        shopSet.forEach(name=>{
+            const opt = document.createElement("option");
+            opt.value = name;
+            listEl.appendChild(opt);
+        })
+    }
+
+    // 添加记录
+    $("#addBtn").onclick = ()=>{
+        const dateVal = $("#inputDate").value;
+        const shopVal = $("#inputShop").value.trim();
+        const hourVal = parseFloat($("#inputHour").value);
+
+        if(!dateVal) return alert("请选择日期");
+        if(!shopVal) return alert("请填写打工地点");
+        if(isNaN(hourVal) || hourVal <=0) return alert("工时必须大于0，最小0.25小时");
+
+        records.push({
+            date: dateVal,
+            shop: shopVal,
+            hours: hourVal
+        });
+        saveRecords();
+        $("#inputShop").value = "";
+        $("#inputHour").value = "";
+        renderAll();
+    };
+
+    $("#clearAll").onclick = ()=>{
+        if(confirm("确定清空所有记录？此操作不可恢复！")){
+            records = [];
+            saveRecords();
+            renderAll();
+        }
+    };
+
+    // 计算：给定窗口结束日，返回窗口7天内总和
+    function calcWindowSum(endDateStr) {
+        const endD = parseDate(endDateStr);
+        const startD = addDays(endD, -6);
+        let sum =0;
+        for(let r of records){
+            const rd = parseDate(r.date);
+            if(rd >= startD && rd <= endD){
+                sum += r.hours;
+            }
+        }
+        return sum;
+    }
+
+    // 计算近6天总和（不含今天）
+    function getPast6Sum() {
+        const todayD = parseDate(todayDateStr);
+        const sixDayAgo = addDays(todayD, -6);
+        let sum=0;
+        for(let r of records){
+            const rd = parseDate(r.date);
+            if(rd >= sixDayAgo && rd < todayD){
+                sum += r.hours;
+            }
+        }
+        return sum;
+    }
+    // 获取今天录入总和
+    function getTodaySum() {
+        let sum=0;
+        for(let r of records){
+            if(r.date === todayDateStr) sum += r.hours;
+        }
+        return sum;
+    }
+
+    function renderAll() {
+        refreshShopDatalist(); //每次渲染更新店铺下拉列表
+
+        const past6Sum = getPast6Sum();
+        const todaySum = getTodaySum();
+        const todayRemain = LIMIT - past6Sum;
+
+        const tomorrowDate = addDays(parseDate(todayDateStr), 1);
+        const tomorrowDateStr = getLocalDateStr(tomorrowDate);
+        const tomorrowWindowTotal = calcWindowSum(tomorrowDateStr);
+        const tomorrowRemain = LIMIT - tomorrowWindowTotal;
+
+        // 窗口文字
+        const todayWinStart = addDays(parseDate(todayDateStr),-6);
+        const tomorrowWinStart = addDays(parseDate(tomorrowDateStr),-6);
+        $("#windowInfo").innerText = `今日窗口：${getLocalDateStr(todayWinStart)} ~ ${todayDateStr}｜明日窗口：${getLocalDateStr(tomorrowWinStart)} ~ ${tomorrowDateStr}`;
+
+        // 今天剩余，改为保留2位小数，支持3.75
+        $("#todayRemain").innerText = todayRemain.toFixed(2);
+        $("#past6").innerText = past6Sum.toFixed(2)+"h";
+        $("#todayTotal").innerText = todaySum.toFixed(2)+"h";
+
+        // 今天状态
+        const todayEl = $("#todayStatus");
+        if(todayRemain <= 0){
+            todayEl.className = "status-text red-text";
+            todayEl.innerText = "⚠️ 当前7天窗口已超标，不要再上班";
+        }else if(todayRemain <= WARN_VALUE){
+            todayEl.className = "status-text yellow-text";
+            todayEl.innerText = "⚠️ 剩余工时不多，注意控制";
+        }else{
+            todayEl.className = "status-text green-text";
+            todayEl.innerText = "";
+        }
+
+        // 明天剩余 + 独立状态，保留2位小数
+        $("#tomorrowRemain").innerText = tomorrowRemain.toFixed(2);
+        const tomEl = $("#tomorrowRemain");
+        const tomStatusEl = $("#tomorrowStatus");
+        if(tomorrowRemain <= 0){
+            tomEl.className = "tomorrow-value red-text";
+            tomStatusEl.className = "status-text red-text";
+            tomStatusEl.innerText = "⚠️ 明天的7天窗口已超标";
+        }else if(tomorrowRemain <= WARN_VALUE){
+            tomEl.className = "tomorrow-value yellow-text";
+            tomStatusEl.className = "status-text yellow-text";
+            tomStatusEl.innerText = "⚠️ 明天窗口剩余工时不多";
+        }else{
+            tomEl.className = "tomorrow-value green-text";
+            tomStatusEl.className = "status-text green-text";
+            tomStatusEl.innerText = "明天窗口工时充裕";
+        }
+
+        // 进度条（当前7天窗口总工时占比）
+        const currentWindowTotal = calcWindowSum(todayDateStr);
+        const pct = Math.min(100, currentWindowTotal / LIMIT *100);
+        $("#progressFill").style.width = pct+"%";
+        const fill = $("#progressFill");
+        fill.className = "progress-fill";
+        if(currentWindowTotal >= LIMIT) fill.classList.add("over");
+        else if( (LIMIT - currentWindowTotal) <= WARN_VALUE ) fill.classList.add("warn");
+
+        // 渲染历史记录，按日期分组倒序，工时保留2位小数
+        const groups = {};
+        records.forEach(r=>{
+            if(!groups[r.date]) groups[r.date] = [];
+            groups[r.date].push(r);
+        });
+        const sortedDates = Object.keys(groups).sort((a,b)=> parseDate(b)-parseDate(a));
+        let html = "";
+        sortedDates.forEach(dStr=>{
+            const dayRecs = groups[dStr];
+            const dayTotal = dayRecs.reduce((s,item)=>s+item.hours,0);
+            const dObj = parseDate(dStr);
+            const weekArr = ["周日","周一","周二","周三","周四","周五","周六"];
+            const weekName = weekArr[dObj.getDay()];
+            html += `<div class="day-group">
+                <div class="day-head">${dStr.replace(/-/g,"/")} ${weekName} <span>共${dayTotal.toFixed(2)}h</span></div>`;
+            dayRecs.forEach((rec, idxInAll)=>{
+                const realIdx = records.findIndex(x=>x.date===rec.date && x.shop===rec.shop && x.hours===rec.hours);
+                html += `<div class="record-item">
+                    <span>${rec.shop}</span>
+                    <span>${rec.hours.toFixed(2)}h <span class="del-btn" data-idx="${realIdx}">×</span></span>
+                </div>`;
+            });
+            html += "</div>";
+        });
+        $("#historyList").innerHTML = html;
+        $$(".del-btn").forEach(btn=>{
+            btn.onclick = ()=> delRecord(Number(btn.dataset.idx));
+        })
+    }
+
+    renderAll();
+</script>
+</body>
+</html>
